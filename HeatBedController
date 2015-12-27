@@ -1,0 +1,147 @@
+/*
+ 
+relay timer
+ 
+ */
+
+#define buttonPin A0
+#define relayPin A3
+#define buzzerPin 11
+
+// include the library code:
+#include <LiquidCrystal.h>
+#include <EEPROM.h>  // the library for writing to and from the EEPROM
+
+unsigned long delayTime = 10;
+unsigned long finishTime = 1;
+boolean flag = false;
+
+
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+void setup() {
+ // Serial.begin(9600);
+
+  delayTime = (EEPROM.read(0)*60000);
+  finishTime = millis()+ delayTime;
+  
+  digitalWrite(relayPin, HIGH);
+  
+  pinMode(relayPin, OUTPUT);
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("   Heated Bed  ");
+  
+  lcd.setCursor(0, 1);
+  lcd.print("   Controller  ");
+ 
+  tone(buzzerPin, 1000,100);
+  delay(200); 
+  tone(buzzerPin, 1000,100);
+  delay(2000);
+  lcd.clear();
+
+}
+
+void loop() {
+
+
+  //press GO
+  if(analogRead(buttonPin)<=800 && analogRead(buttonPin)>=600 && flag == false){
+      flag = true;
+      delayTime = (EEPROM.read(0)*60000);
+      finishTime = millis();
+      finishTime = (finishTime + delayTime);
+      tone(buzzerPin, 500,700);
+      delay(300);
+     }
+  
+  if(analogRead(buttonPin)<=800 && analogRead(buttonPin)>=600 && flag == true){
+      flag = false;
+      delay(300);
+     }
+
+  //press up
+  if(analogRead(buttonPin)<=200 && analogRead(buttonPin)>=100){
+    EEPROM.write(0, EEPROM.read(0)+1); // Write byte
+    delayTime = (EEPROM.read(0)*60000);
+    tone(buzzerPin, 1200,100);
+    delay(300);
+    lcd.clear();
+  }
+  
+  //press down
+  if(analogRead(buttonPin)<=350 && analogRead(buttonPin)>=250){
+    EEPROM.write(0, EEPROM.read(0)-1); // Write byte
+    delayTime = (EEPROM.read(0)*60000);
+    tone(buzzerPin, 800,100);
+    delay(300);
+    lcd.clear();
+  }
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Set @ ");
+  lcd.setCursor(6, 0);
+  lcd.print(delayTime/60000);
+  lcd.setCursor(9, 0);
+  lcd.print("Minutes");
+
+  //decide what status to show
+  if(flag==true){
+  lcd.setCursor(0, 1);
+  lcd.print("OFF in ");
+  lcd.setCursor(7, 1);
+  lcd.print((finishTime/60000)-(millis()/60000));
+  lcd.setCursor(9, 1);
+  lcd.print("Minutes");
+  }
+   else{
+  lcd.setCursor(0, 1);
+  lcd.print(" Heated Bed OFF ");
+  
+  lcd.setCursor(0, 0);
+  lcd.print("Set @ ");
+  lcd.setCursor(6, 0);
+  lcd.print(delayTime/60000);
+  lcd.setCursor(9, 0);
+  lcd.print("Minutes");
+   }
+  
+  delay(300);
+  lcd.clear();
+  
+  
+  if(millis()>=finishTime && flag==true){
+    flag = false;
+    tone(buzzerPin, 1000,2000);
+    delay(3000); 
+    }
+  
+  if(flag==true){
+    lcd.setCursor(13, 1);
+    lcd.print("ON ");
+    digitalWrite(relayPin, LOW);
+  }
+  
+  if(flag==false){
+    digitalWrite(relayPin, HIGH);
+  }
+  
+//Serial.print("Current Time   ");
+//Serial.print(millis());
+//
+//Serial.print("  Delay Time  ");
+//Serial.print(delayTime);
+//
+//Serial.print("  Finish Time  ");
+//
+//Serial.println(finishTime);
+
+}  
+
+
+
+
+  
